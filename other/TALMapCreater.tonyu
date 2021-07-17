@@ -1,0 +1,342 @@
+extends PanelChar;
+
+/////////////////////////////////////////////////////
+// TonyuALib用マップ変換機 ver0.0
+/////////////////////////////////////////////////////
+//
+// Tonyu形式のマップファイル(.map)を
+// TonyuALib(Tonyu風 Androidゲームライブラリ)の
+// マップファイル(.amap)に変換するクラスです。
+// 
+// 変換ボタンを押すと.amapファイルを作ります。
+// 
+// 「Ball.bmpをマップ番号に含める」のチェックは、
+// TonyuALib側でBall.png(.bmpはAndroidでは非推奨)
+// を含める場合にチェックを付けてください。
+// 
+// TonyuALibでマップを表示する時は、
+// Tonyuの「ウィンドウ」→「キャラクタパターン」で
+// 画像ファイルが表示されている順番に
+// 画像ファイルを読み込む必要があります。
+// (読み込み順番や、画像ファイルのパターン画像の並びが
+// ずれると画像が変わってしまいます)
+/////////////////////////////////////////////////////
+
+timeStoper = timeStop();
+updateEx(3);
+
+width  = 250;
+height = 250;
+resize(width, height);
+alpha = 200;
+zOrder = -9999;
+
+screenW=$screenWidth;
+screenH=$screenHeight;
+if ($screenWidth  < 270) $screenWidth  = 270;
+if ($screenHeight < 270) $screenHeight = 270;
+
+panel.fillRect(0, 0, width, height, color(32, 32, 32));
+panelDrawRect(panel,0, 0, width-1, height-1, color(192,192,192));
+$map.scrollTo(0,0);
+
+mapDataAryW = new Array();
+mapDataAryH = new Array();
+
+convR = 0;
+convSW = 0;
+error=0;
+skip=0;
+text1="";
+while (1) {
+  setFont("ＭＳ ゴシック");
+  
+  text(5, 5, "TonyuALib用マップ変換機", $clWhite, 12, -1);
+  
+  text(30,  40, "横パターン数　："+$map.width  , $clWhite, 12, -1);
+  text(30,  60, "縦パターン数　："+$map.height , $clWhite, 12, -1);
+  text(30,  80, "１パターン幅　："+$map.pwidth , $clWhite, 12, -1);
+  text(30, 100, "１パターン高さ："+$map.pheight, $clWhite, 12, -1);
+  text1 = editer(20, 140, 160, 16, color(192,192,192), $clWhite, text1, "保存ファイル名", color(0,0,0), color(128,128,128));
+  //text1 = editer(20,140,160,16,text1,"保存ファイル名");
+  text(180,140, ".amap", $clWhite, 12, -1);
+  
+  checkbox1 = checkbox(3, 20, 180, 16, 16, color(192,192,192), color(128,128,128), $clWhite, checkbox1, "Ball.bmpをマップ番号に含める", $clWhite, 9);
+  if (error==20) {
+    button1text="上書き変換";
+    if (text1 != text1old) error = 0;
+  }else {
+    button1text="変換";
+  }
+  button1 = button(1,70,210,60,20,color(0,255,0),color(0,96,0),color(192,255,192),button1text,color(0,0,0),9);
+  if (button1==1) {
+    if(text1==""){
+      error=10;
+    }else if (fileExists(text1+".amap") && error!=20) {
+      text1old = text1;
+      error=20;
+    }else{
+      error=convMapDate(text1+".amap", 32*(!checkbox1));
+      break;
+    }
+  }
+  button2 = button(2,150,210,60,20,color(0,255,0),color(0,96,0),color(192,255,192),"キャンセル",color(0,0,0),9);
+  if (button2==1) {skip=1; break;}
+  if (error==10)text(20, 160, "ファイル名が入力されていません", $clRed, 9, -1);
+  if (error==20)text(20, 160, "同名のファイルが存在します！", $clRed, 9, -1);
+  x = $viewX + width /2 + 10;
+  y = $viewY + height/2 + 10;
+  update();
+}
+while (skip==0) {
+  setFont("ＭＳ ゴシック");
+  if      (error == 0) text(60, 100, "変換完了！", $clWhite, 20, -1);
+  else                 text(60, 100, "エラー発生！", $clRed, 20, -1);
+  button99 = button(99,80,160,80,30,color(0,255,0),color(0,96,0),color(192,255,192),"閉じる",color(0,0,0),12);
+  if (button99==1) {break;}
+  x = $viewX + width /2 + 10;
+  y = $viewY + height/2 + 10;
+  update();
+}
+$screenWidth =screenW;
+$screenHeight=screenH;
+timeStoper.releaseAll();
+
+function text(x, y, t, c, s, z){
+  var xx, yy;
+  xx = x+this.x-width/2;
+  yy = y+this.y-height/2;
+  drawText(xx,yy,t,c,s,zOrder+z);
+}
+
+function editer(x, y, w, h, c, c2, t, t2, tc, tc2) {
+  var xx, yy, tt, cc, cc2;
+  xx = x+this.x-width/2;
+  yy = y+this.y-height/2;
+  if (!$TextEditor.isEditing()) {
+    if (xx <= $mouseX && $mouseX <= xx+w && yy <= $mouseY && $mouseY <= yy+h) {
+      if (getkey(1) == 1) {
+        $TextEditor.setPosition(xx,yy,w,h);
+        $TextEditor.setFont(12,"ＭＳ ゴシック");
+        $TextEditor.setText(t);
+        $TextEditor.edit();
+      }
+      cc2=c2;
+    } else {
+      cc2=c;
+    }
+    fillRect(xx,yy,xx+w,yy+h,cc2,zOrder-1);
+    if (t=="") {tt=t2;cc=tc2;} else {tt=t;cc=tc;}
+    drawText(xx,yy,tt,cc,12,zOrder-2);
+  } else {
+    t = $TextEditor.getText();
+  }
+  return t;
+}
+
+function button(n, x, y, w, h, c, c2, c3, t, tc, s){
+  var xx,yy,cc;
+  xx = x+this.x-width/2;
+  yy = y+this.y-height/2;
+  cc=c;
+  if (xx <= $mouseX && $mouseX <= xx+w && yy <= $mouseY && $mouseY <= yy+h) {
+    if (getkey(1)==1) {
+      $mdownB = n;
+    } else if (getkey(1)==0 && $mdownB == n) {
+      $mdownB = 0;
+      return 1;
+    }
+    if ($mdownB == n) cc=c2; else cc=c3;
+  } else {
+    if (getkey(1)==0 && $mdownB == n) $mdownB = 0;
+  }
+  fillRect(xx,yy,xx+w,yy+h,cc,zOrder-1);
+  drawText(xx+w/2-textWidth(t,s)/2,yy+h/2-textHeight(t,s)/2,t,tc,s,zOrder-2);
+  return 0;
+}
+
+function checkbox(n, x, y, w, h, c, c2, c3, check, t, tc, s){
+  var xx,yy,cc;
+  xx = x+this.x-width/2;
+  yy = y+this.y-height/2;
+  cc=c;
+  if (xx <= $mouseX && $mouseX <= xx+w && yy <= $mouseY && $mouseY <= yy+h) {
+    if (getkey(1)==1) {
+      $mdownB = n;
+    } else if (getkey(1)==0 && $mdownB == n) {
+      $mdownB = 0;
+      return !check;
+    }
+    if ($mdownB == n) cc=c2; else cc=c3;
+  } else {
+    if (getkey(1)==0 && $mdownB == n) $mdownB = 0;
+  }
+  drawRect(xx,yy,xx+w,yy+h,cc,zOrder-1);
+  if (check) {
+    //fillRect(xx+2,yy+2,xx+w-1,yy+h-1,cc,zOrder-1);
+    drawLine(xx+2,yy+h/2,xx+w/5*2,yy+h-2,cc,zOrder-1);
+    drawLine(xx+w/5*2,yy+h-2,xx+w-1,yy+1,cc,zOrder-1);
+  }
+  drawText(xx+w+4,yy+h/2-textHeight(t,s)/2,t,tc,s,zOrder-2);
+  return check;
+}
+
+
+function convMapDate(fileName, mainasuP) {
+  var f,i,p,pp,cnt,size,writeSize,tmp,writeAry,writeModeWH;
+  convSW = 1;
+  
+  panel.fillRect(0,height-8,width,height,color(96,96,96));
+  
+  tmp = scanMapDataCnt(mainasuP);
+  if      (tmp == 1) writeSize = 256;
+  else if (tmp == 2) writeSize = 65536;
+  
+  scanMapDateWidth(mapDataAryW, writeSize, mainasuP);
+  scanMapDateHeight(mapDataAryH, writeSize, mainasuP);
+  print("横:"+mapDataAryW.size()+" 縦:"+mapDataAryH.size());
+  if (mapDataAryW.size() <= mapDataAryH.size()) {
+    writeAry = mapDataAryW;
+    writeModeWH = 0; // 横モード
+  } else {
+    writeAry = mapDataAryH;
+    writeModeWH = 1; // 縦モード
+  }
+  
+  f = new FileWriter(fileName);
+  if(f.error()){f.close();return 1;}
+  
+  writeWORD(f,0); // バージョン
+  
+  // モード(縦or横)
+  if      (writeModeWH == 0) {writeBYTE(f,0);print("横モード");}
+  else if (writeModeWH == 1) {writeBYTE(f,1);print("縦モード");}
+  
+  // モード(256チップor65536チップ)
+  if      (writeSize ==   256) {writeBYTE(f,0);print("256モード");}
+  else if (writeSize == 65536) {writeBYTE(f,1);print("65536モード");}
+  
+  writeDWORD(f,$map.width);  // 横数
+  writeDWORD(f,$map.height); // 縦数
+  writeWORD(f,$map.pwidth);  // 幅
+  writeWORD(f,$map.pheight); // 高さ
+  
+  pp  = -99999999;
+  cnt = 0;
+  size = writeAry.size();
+  for (i=0; i<size; i++) {
+    writeBYTE(f,writeAry.get(i)); // チップ番号
+    convR = (i/size)*(1/4)+3/4;
+  }
+  panel.fillRect(0,height-8,width,height,$clGreen);
+  if(f.error()){f.close();return 1;}
+  f.close();
+  return 0;
+}
+
+// マップのチップ番号が256以上使っているか？
+function scanMapDataCnt(mainasuP) {
+  var mx,my,p;
+  for (my=0; my<$map.height; my++) {
+    for (mx=0; mx<$map.width; mx++) {
+      p = $map.get(mx,my) - mainasuP;
+      if (p >= 256) {
+        return 2; // ２バイト必要
+      }
+      convR = (mx+my*$map.width)/($map.width*$map.height)*(1/4);
+    }
+  }
+  return 1; // １バイトで済む
+}
+
+function scanMapDateWidth(ary, writeSize, mainasuP) {
+  var mx,my,p,pp,cnt;
+  pp  = -99999999;
+  cnt = 0;
+  for (my=0; my<$map.height; my++) {
+    for (mx=0; mx<$map.width; mx++) {
+      p = $map.get(mx,my);
+      if (p != pp || cnt >= 255) {
+        if (pp != -99999999) addAryBYTE(ary,cnt); // 連続数
+        if      (writeSize ==   256) addAryBYTE(ary, amod(p - mainasuP,   256)); // チップ番号
+        else if (writeSize == 65536) addAryWORD(ary, amod(p - mainasuP, 65536)); // チップ番号
+        pp  = p;
+        cnt = 0;
+      } else {
+        cnt ++;
+      }
+      convR = (mx+my*$map.width)/($map.width*$map.height)*(1/4)+1/4;
+    }
+  }
+  addAryBYTE(ary,cnt); // 連続数
+  return ary;
+}
+
+function scanMapDateHeight(ary, writeSize, mainasuP) {
+  var mx,my,p,pp,cnt;
+  pp  = -99999999;
+  cnt = 0;
+  for (mx=0; mx<$map.width; mx++) {
+    for (my=0; my<$map.height; my++) {
+      p = $map.get(mx,my);
+      if (p != pp || cnt >= 255) {
+        if (pp != -99999999) addAryBYTE(ary,cnt); // 連続数
+        if      (writeSize ==   256) addAryBYTE(ary, amod(p - mainasuP,   256)); // チップ番号
+        else if (writeSize == 65536) addAryWORD(ary, amod(p - mainasuP, 65536)); // チップ番号
+        pp  = p;
+        cnt = 0;
+      } else {
+        cnt ++;
+      }
+      convR = (my+mx*$map.height)/($map.width*$map.height)*(1/4)+2/4;
+    }
+  }
+  addAryBYTE(ary,cnt); // 連続数
+  return ary;
+}
+
+
+function addAryBYTE(a,d) {
+  a.add(d%256);
+}
+function addAryWORD(a,d) {
+  a.add(d/256%256);
+  a.add(d%256);
+}
+function addAryDWORD(a,d) {
+  a.add(d/16777216%256);
+  a.add(d/65536%256);
+  a.add(d/256%256);
+  a.add(d%256);
+}
+
+
+function writeBYTE(f,d) {
+  f.write(d%256);
+}
+function writeWORD(f,d) {
+  f.write(d/256%256);
+  f.write(d%256);
+}
+function writeDWORD(f,d) {
+  f.write(d/16777216%256);
+  f.write(d/65536%256);
+  f.write(d/256%256);
+  f.write(d%256);
+}
+
+
+function onDraw() {
+  if (convSW) {
+    panel.fillRect(0,height-8,convR*width,height,$clGreen);
+  }
+}
+
+
+
+function panelDrawRect(panel,rx,ry,sx,sy,col) {
+  panel.drawLine(rx,ry,rx,sy,col);
+  panel.drawLine(rx,sy,sx,sy,col);
+  panel.drawLine(sx,sy,sx,ry,col);
+  panel.drawLine(sx,ry,rx,ry,col);
+}
