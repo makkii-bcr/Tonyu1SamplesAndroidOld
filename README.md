@@ -11,7 +11,7 @@ Android 2.3や4.0の時代に作った古いプロジェクトのため、修正
 |IDE|Eclipse|
 |言語|Java|
 ||OpenGL ES 1.1|
-|compileSdkVersion|Android 2.2 (API 8)|
+|compileSdkVersion|API 8 (Android 2.2)|
 
 ## 備考
 
