@@ -23,7 +23,5 @@ Android 2.3や4.0の時代に作った古いプロジェクトのため、修正
 
 <img src="other/screenshot.jpg" width="512" height="384"><br>
 
-<img src="other/screenshot2.png" width="285" height="135">
-<img src="other/screenshot3.png" width="285" height="135"><br>
-<img src="other/screenshot4.png" width="285" height="135">
-<img src="other/screenshot5.png" width="285" height="135"><br>
+<img src="other/screenshot2.png" width="285" height="135">&nbsp;<img src="other/screenshot3.png" width="285" height="135"><br>
+<img src="other/screenshot4.png" width="285" height="135">&nbsp;<img src="other/screenshot5.png" width="285" height="135"><br>
